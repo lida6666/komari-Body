@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访客信息弹窗 · Naive UI 风格</title>
+    <style>
+        /* ===== 弹窗样式（全部使用独立命名空间，避免污染宿主页面）===== */
+        #nv-visitor-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 999999;
+            width: 300px;
+
+            background: #ffffff;
+            border: 1px solid #e0e0e6;
+            border-radius: 0;                          /* 直角 */
+            box-shadow:
+                0 3px 6px -4px rgba(0,0,0,.12),
+                0 6px 16px 0 rgba(0,0,0,.08),
+                0 9px 28px 8px rgba(0,0,0,.05);
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #333639;
+
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(12px);
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+            overflow: hidden;
+        }
+
+        #nv-visitor-popup.nv-active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        #nv-visitor-popup.nv-hiding {
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        /* 头部 */
+        #nv-visitor-popup .nv-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px 10px;
+            border-bottom: 1px solid #e0e0e6;
+        }
+
+        #nv-visitor-popup .nv-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #18a058;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #nv-visitor-popup .nv-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #nv-visitor-popup .nv-title-block {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #nv-visitor-popup .nv-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333639;
+            line-height: 1.4;
+        }
+
+        #nv-visitor-popup .nv-subtitle {
+            font-size: 11px;
+            color: #909399;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #nv-visitor-popup .nv-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+            background: rgba(24,160,88,.1);
+            color: #18a058;
+            border: 1px solid rgba(24,160,88,.2);
+            border-radius: 2px;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        #nv-visitor-popup .nv-tag .nv-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #18a058;
+            animation: nv-blink 1.4s ease infinite;
+        }
+
+        @keyframes nv-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.25; }
+        }
+
+        #nv-visitor-popup .nv-close {
+            width: 26px;
+            height: 26px;
+            border: none;
+            background: transparent;
+            color: #bbbec4;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            padding: 0;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        #nv-visitor-popup .nv-close:hover {
+            background: #f2f2f2;
+            color: #333639;
+        }
+
+        #nv-visitor-popup .nv-close svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        /* 内容行 */
+        #nv-visitor-popup .nv-body {
+            padding: 4px 0;
+        }
+
+        #nv-visitor-popup .nv-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 14px;
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        #nv-visitor-popup .nv-row:last-child {
+            border-bottom: none;
+        }
+
+        #nv-visitor-popup .nv-icon-wrap {
+            width: 28px;
+            height: 28px;
+            background: #f8f8f8;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #18a058;
+        }
+
+        #nv-visitor-popup .nv-icon-wrap svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        #nv-visitor-popup .nv-row-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #nv-visitor-popup .nv-label {
+            font-size: 11px;
+            color: #909399;
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+
+        #nv-visitor-popup .nv-value {
+            font-size: 13px;
+            color: #333639;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 骨架屏 */
+        #nv-visitor-popup .nv-skeleton {
+            display: inline-block;
+            height: 12px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #ebebeb 25%, #f5f5f5 50%, #ebebeb 75%);
+            background-size: 200% 100%;
+            animation: nv-shimmer 1.2s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes nv-shimmer {
+            from { background-position: 200% 0; }
+            to   { background-position: -200% 0; }
+        }
+
+        /* 进度条 —— 紧贴底部，与弹窗等宽（不缩进）*/
+        #nv-visitor-popup .nv-progress {
+            height: 4px;
+            background: #e0e0e6;
+            width: 100%;
+        }
+
+        #nv-visitor-popup .nv-progress-bar {
+            height: 100%;
+            background: #18A058;
+            transform-origin: left;
+            animation: nv-shrink 5s linear forwards;
+        }
+
+        @keyframes nv-shrink {
+            from { transform: scaleX(1); }
+            to   { transform: scaleX(0); }
+        }
+
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            #nv-visitor-popup {
+                background: #1e1e20;
+                border-color: #383838;
+                color: rgba(255,255,255,.9);
+                box-shadow:
+                    0 3px 6px -4px rgba(0,0,0,.48),
+                    0 6px 16px 0 rgba(0,0,0,.36),
+                    0 9px 28px 8px rgba(0,0,0,.2);
+            }
+            #nv-visitor-popup .nv-header { border-color: #383838; }
+            #nv-visitor-popup .nv-title  { color: rgba(255,255,255,.9); }
+            #nv-visitor-popup .nv-subtitle,
+            #nv-visitor-popup .nv-label  { color: rgba(255,255,255,.45); }
+            #nv-visitor-popup .nv-value  { color: rgba(255,255,255,.82); }
+            #nv-visitor-popup .nv-row    { border-color: #2a2a2d; }
+            #nv-visitor-popup .nv-icon-wrap { background: #2a2a2d; }
+            #nv-visitor-popup .nv-close  { color: rgba(255,255,255,.3); }
+            #nv-visitor-popup .nv-close:hover { background: #2a2a2d; color: rgba(255,255,255,.82); }
+            #nv-visitor-popup .nv-progress { background: #2a2a2d; }
+            #nv-visitor-popup .nv-skeleton {
+                background: linear-gradient(90deg, #2a2a2d 25%, #333336 50%, #2a2a2d 75%);
+                background-size: 200% 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== 访客弹窗 HTML ===== -->
+<div id="nv-visitor-popup">
+
+    <div class="nv-header">
+        <div class="nv-title-block">
+            <div class="nv-title">欢迎</div>
+            <div class="nv-subtitle" id="nv-loc-sub">正在定位...</div>
+        </div>
+        <button class="nv-close" onclick="nvClosePopup()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="nv-body">
+
+        <div class="nv-row">
+            <div class="nv-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+                </svg>
+            </div>
+            <div class="nv-row-body">
+                <div class="nv-label">位置</div>
+                <div class="nv-value" id="nv-val-loc"><span class="nv-skeleton" style="width:110px"></span></div>
+            </div>
+        </div>
+
+        <div class="nv-row">
+            <div class="nv-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 1H7C5.9 1 5 1.9 5 3v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zm-1 18H8v-2h8v2zm0-4H8V7h8v8zm0-10H8V3h8v2z"/>
+                </svg>
+            </div>
+            <div class="nv-row-body">
+                <div class="nv-label">设备</div>
+                <div class="nv-value" id="nv-val-device"><span class="nv-skeleton" style="width:80px"></span></div>
+            </div>
+        </div>
+
+        <div class="nv-row">
+            <div class="nv-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 11H4v-2h11v2zm3-4H4V9h14v2z"/>
+                </svg>
+            </div>
+            <div class="nv-row-body">
+                <div class="nv-label">浏览器</div>
+                <div class="nv-value" id="nv-val-browser"><span class="nv-skeleton" style="width:90px"></span></div>
+            </div>
+        </div>
+
+        <div class="nv-row">
+            <div class="nv-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+            <div class="nv-row-body">
+                <div class="nv-label">IP / 运营商</div>
+                <div class="nv-value" id="nv-val-ip"><span class="nv-skeleton" style="width:130px"></span></div>
+            </div>
+        </div>
+
+        <div class="nv-row">
+            <div class="nv-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+                </svg>
+            </div>
+            <div class="nv-row-body">
+                <div class="nv-label">访问时间</div>
+                <div class="nv-value" id="nv-val-time">--</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 进度条：无 padding，直接贴满底部 -->
+    <div class="nv-progress">
+        <div class="nv-progress-bar" id="nv-prog"></div>
+    </div>
+
+</div>
+
+<!-- ===== 弹窗逻辑脚本 ===== -->
+<script>
+(function () {
+    'use strict';
+
+    var popup = document.getElementById('nv-visitor-popup');
+    var autoTimer = null;
+
+    /* ---------- 设备 & 浏览器检测 ---------- */
+    function detectClient() {
+        var ua = navigator.userAgent;
+        var device = '电脑';
+        if (/android/i.test(ua))            device = 'Android 手机';
+        else if (/iphone|ipod/i.test(ua))  device = 'iPhone';
+        else if (/ipad/i.test(ua))          device = 'iPad';
+        else if (/tablet/i.test(ua))        device = '平板电脑';
+
+        var browser = '未知', version = '';
+        if      (/Edg\/(\d+)/i.test(ua))  { browser = 'Edge';    version = ua.match(/Edg\/(\d+)/i)[1]; }
+        else if (/OPR\/(\d+)/i.test(ua))  { browser = 'Opera';   version = ua.match(/OPR\/(\d+)/i)[1]; }
+        else if (/Chrome\/(\d+)/i.test(ua) && !/Edg|OPR/i.test(ua)) { browser = 'Chrome';  version = ua.match(/Chrome\/(\d+)/i)[1]; }
+        else if (/Firefox\/(\d+)/i.test(ua)) { browser = 'Firefox'; version = ua.match(/Firefox\/(\d+)/i)[1]; }
+        else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) {
+            browser = 'Safari';
+            var vm = ua.match(/Version\/(\d+)/i);
+            if (vm) version = vm[1];
+        }
+        return { device: device, browser: version ? browser + ' ' + version : browser };
+    }
+
+    function getTime() {
+        return new Date().toLocaleString('zh-CN', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+    }
+
+    function setText(id, html) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    }
+
+    /* ---------- 多 API 轮询 ---------- */
+    var apiList = [
+        function () {
+            return fetch('https://ip-api.com/json/?lang=zh-CN&fields=status,country,regionName,city,query,isp', { signal: AbortSignal.timeout(4000) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.status !== 'success') throw new Error('fail');
+                    var loc = [d.country, d.city || d.regionName].filter(Boolean).join(' · ');
+                    return { ip: d.query, isp: d.isp || '未知运营商', loc: loc };
+                });
+        },
+        function () {
+            return fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.error) throw new Error(d.reason || 'fail');
+                    var loc = [d.country_name, d.city || d.region].filter(Boolean).join(' · ');
+                    return { ip: d.ip, isp: d.org || '未知运营商', loc: loc };
+                });
+        },
+        function () {
+            return fetch('https://api.vore.top/api/IPdata', { signal: AbortSignal.timeout(5000) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.code !== 0) throw new Error('fail');
+                    var ip = d.data && d.data.ip;
+                    var loc = [d.data && d.data.country, d.data && (d.data.city || d.data.province)].filter(Boolean).join(' · ');
+                    return { ip: ip || '未知', isp: (d.data && d.data.isp) || '未知运营商', loc: loc };
+                });
+        }
+    ];
+
+    function fetchWithFallback(list, index) {
+        if (index >= list.length) return Promise.resolve(null);
+        return list[index]().catch(function () {
+            return fetchWithFallback(list, index + 1);
+        });
+    }
+
+    /* ---------- 关闭 ---------- */
+    window.nvClosePopup = function () {
+        if (autoTimer) clearTimeout(autoTimer);
+        popup.classList.add('nv-hiding');
+        setTimeout(function () {
+            popup.classList.remove('nv-active', 'nv-hiding');
+        }, 300);
+    };
+
+    /* ---------- 初始化 ---------- */
+    function init() {
+        var client = detectClient();
+        setText('nv-val-device', client.device);
+        setText('nv-val-browser', client.browser);
+        setText('nv-val-time', getTime());
+
+        fetchWithFallback(apiList, 0).then(function (d) {
+            if (d) {
+                setText('nv-val-loc', d.loc || '未知位置');
+                setText('nv-val-ip', d.ip + ' · ' + d.isp);
+                var sub = document.getElementById('nv-loc-sub');
+                if (sub) sub.textContent = '来自 ' + (d.loc || '未知');
+            } else {
+                setText('nv-val-loc', '未知位置');
+                setText('nv-val-ip', '暂无法获取');
+                var sub = document.getElementById('nv-loc-sub');
+                if (sub) sub.textContent = '网络访客';
+            }
+        });
+
+        setTimeout(function () {
+            popup.classList.add('nv-active');
+            autoTimer = setTimeout(function () { window.nvClosePopup(); }, 5000);
+        }, 800);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+
+</body>
+</html>
